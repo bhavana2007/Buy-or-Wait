@@ -62,9 +62,22 @@ In the `backend` directory, run:
 
 ## Current Capabilities
 - **Deterministic Financial Engine**: Computes affordability via 90-day cash-flow simulation, strictly maintaining minimum balances. Evaluates full payment, partial payment, wait, and installment plans.
-- **AI Extraction Layer**: Extensible interfaces (`DocumentExtractor` and `MessageExtractor`) to safely parse unstructured user inputs (invoices and messages) into structured financial records. Currently uses `MockDocumentExtractor` and `MockMessageExtractor` for robust local development.
-- **Fintech Dashboard**: A responsive, multi-page React application presenting financial health, charts, and recommendations using Tailwind CSS.
+- **AI Information Extraction**: Extensible interfaces (`RealLLMDocumentExtractor` and `RealLLMMessageExtractor`) safely parse unstructured user inputs (invoices and messages) into structured financial records. Supports fallback to `MockDocumentExtractor` and `MockMessageExtractor` for local development without an API key. 
+- **Validation Pipeline**: Deterministic validation runs *after* AI extraction to ensure no hallucinations (e.g. negative amounts) slip into the financial state. Human review is mandatory.
+- **Fintech Dashboard**: A responsive, multi-page React application presenting financial health, charts, and AI review workflows using Tailwind CSS.
 - **API and Database**: FastAPI backend powered by SQLite, pre-configured with a seed database to run immediately.
+
+## Configuration & Local Setup
+To run the Real AI extraction using OpenAI's GPT-4o, add your key to a `.env` file in the root:
+```env
+OPENAI_API_KEY=your-actual-api-key
+```
+If no key is present (or `your_key_here`), the app gracefully falls back to a Mock Extractor.
+
+## Security & AI Limitations
+- **Information Component Only**: AI extraction is used *only* to convert unstructured information into structured financial facts. The deterministic engine remains the sole source of truth for affordability decisions.
+- **Human Review**: AI output is never blindly applied. The frontend requires explicit human review and approval for all parsed events.
+- **Untrusted Input**: All uploaded images and text are treated as untrusted. The AI is explicitly prompted to ignore embedded instructions.
 
 ## Current Limitations
 - **AI Services**: Currently uses mocked extraction logic. Real LLM/VLM providers are not yet integrated into the endpoints.

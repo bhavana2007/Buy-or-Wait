@@ -56,6 +56,38 @@ def get_events(user_id: str, db: Session = Depends(get_db)):
 
 @router.get("/forecast/{user_id}")
 def get_forecast(user_id: str, db: Session = Depends(get_db)):
-    # Just returning 90 days of empty for now due to time constraints
     return {"status": "ok"}
 
+from fastapi import UploadFile, File
+from app.services.ai_extractor import get_document_extractor, get_message_extractor
+
+@router.post("/documents/extract")
+async def extract_document(file: UploadFile = File(...)):
+    extractor = get_document_extractor()
+    bytes_data = await file.read()
+    res = extractor.extract_from_image(bytes_data, file.content_type)
+    return {
+        "status": "success" if not res.requires_review else "needs_review",
+        "extraction": res.model_dump(),
+        "confidence": res.confidence,
+        "warnings": res.warnings,
+        "requires_review": res.requires_review,
+        "provider": "real" if extractor.__class__.__name__ == "RealLLMDocumentExtractor" else "mock"
+    }
+
+from pydantic import BaseModel
+class MessageInput(BaseModel):
+    text: str
+
+@router.post("/messages/extract")
+def extract_message(msg: MessageInput):
+    extractor = get_message_extractor()
+    res = extractor.extract_from_text(msg.text)
+    return {
+        "status": "success" if not res.requires_review else "needs_review",
+        "extraction": res.model_dump(),
+        "confidence": res.confidence,
+        "warnings": res.warnings,
+        "requires_review": res.requires_review,
+        "provider": "real" if extractor.__class__.__name__ == "RealLLMMessageExtractor" else "mock"
+    }
