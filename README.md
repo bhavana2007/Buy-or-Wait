@@ -64,8 +64,9 @@ In the `backend` directory, run:
 - **Deterministic Financial Engine**: Computes affordability via 90-day cash-flow simulation, strictly maintaining minimum balances. Evaluates full payment, partial payment, wait, and installment plans.
 - **AI Information Extraction**: Extensible interfaces (`RealLLMDocumentExtractor` and `RealLLMMessageExtractor`) safely parse unstructured user inputs (invoices and messages) into structured financial records. Supports fallback to `MockDocumentExtractor` and `MockMessageExtractor` for local development without an API key. 
 - **Validation Pipeline**: Deterministic validation runs *after* AI extraction to ensure no hallucinations (e.g. negative amounts) slip into the financial state. Human review is mandatory.
+- **End-to-End Persisted Workflows**: Document approvals trigger real purchase simulations. Message approvals safely create normalized financial events and instantly recalculate the 90-day forecast.
 - **Fintech Dashboard**: A responsive, multi-page React application presenting financial health, charts, and AI review workflows using Tailwind CSS.
-- **API and Database**: FastAPI backend powered by SQLite, pre-configured with a seed database to run immediately.
+- **API and Database**: FastAPI backend powered by SQLite, fully tracking profiles, events, extractions, and analysis results.
 
 ## Configuration & Local Setup
 To run the Real AI extraction using OpenAI's GPT-4o, add your key to a `.env` file in the root:

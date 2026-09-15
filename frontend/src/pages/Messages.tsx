@@ -1,12 +1,19 @@
 import { useState } from 'react';
-import { CheckCircle, Send } from 'lucide-react';
+import { CheckCircle, Send, TrendingUp } from 'lucide-react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 export const Messages = () => {
   const [message, setMessage] = useState('');
   const [extraction, setExtraction] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [approved, setApproved] = useState(false);
+  
+  // Editable
+  const [eventType, setEventType] = useState('');
+  const [amount, setAmount] = useState(0);
+  const [currency, setCurrency] = useState('');
+  const [effectiveDate, setEffectiveDate] = useState('');
 
   const handleExtract = async () => {
     if (!message) return;
@@ -14,26 +21,35 @@ export const Messages = () => {
     try {
       const res = await axios.post('http://localhost:8000/api/v1/messages/extract', { text: message });
       setExtraction(res.data);
+      setEventType(res.data.extraction.event_type || '');
+      setAmount(res.data.extraction.amount || 0);
+      setCurrency(res.data.extraction.currency || '');
+      setEffectiveDate(res.data.extraction.effective_date || '');
+      setApproved(false);
     } catch (err) {
       console.error(err);
     }
     setLoading(false);
   };
 
-  const handleApprove = () => {
-    setApproved(true);
-    // In a real app, this adds the event to DB via API
-    setTimeout(() => {
-      setApproved(false);
-      setExtraction(null);
-      setMessage('');
-      alert("Event added to financial profile! Forecast updated.");
-    }, 1500);
+  const handleApprove = async () => {
+    try {
+      await axios.post(`http://localhost:8000/api/v1/messages/${extraction.extraction_id}/approve`, {
+        event_type: eventType,
+        amount,
+        currency,
+        effective_date: effectiveDate
+      });
+      setApproved(true);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to approve. Please check dates and amounts.");
+    }
   };
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Message Extraction (Mock/Real AI)</h1>
+      <h1 className="text-3xl font-bold mb-6">Message Extraction</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         
         {/* Input Section */}
@@ -41,7 +57,7 @@ export const Messages = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Paste message or financial event text</label>
           <textarea 
             className="w-full border rounded p-3 h-32 focus:ring-2 focus:ring-blue-500 mb-4"
-            placeholder="e.g. My rent is increasing to ₹18,000 next month."
+            placeholder="e.g. My rent is increasing to ₹18,000 next month starting 2026-10-01."
             value={message}
             onChange={e => setMessage(e.target.value)}
           ></textarea>
@@ -59,7 +75,7 @@ export const Messages = () => {
         {extraction && (
           <div className="bg-white p-6 rounded-lg shadow border border-gray-100 max-w-xl">
             <h2 className="text-xl font-bold mb-4">Parsed Event</h2>
-            {extraction.requires_review && (
+            {extraction.requires_review && !approved && (
               <div className="bg-yellow-50 text-yellow-800 p-3 rounded mb-4 text-sm border border-yellow-200">
                 <strong>Warning:</strong> {extraction.warnings.join(' ')}
               </div>
@@ -67,24 +83,30 @@ export const Messages = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Event Type</label>
-                <input type="text" defaultValue={extraction.extraction.event_type} className="w-full border rounded p-2 capitalize" />
+                <input type="text" value={eventType} onChange={e => setEventType(e.target.value)} disabled={approved} className="w-full border rounded p-2" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Amount</label>
-                <input type="number" defaultValue={extraction.extraction.amount} className="w-full border rounded p-2" />
+                <input type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} disabled={approved} className="w-full border rounded p-2" />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Effective Date</label>
-                <input type="text" defaultValue={extraction.extraction.effective_date || 'N/A'} className="w-full border rounded p-2" />
+                <label className="block text-sm text-gray-600 mb-1">Effective Date (YYYY-MM-DD)</label>
+                <input type="text" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)} disabled={approved} className="w-full border rounded p-2" />
               </div>
               
               {!approved ? (
                 <button onClick={handleApprove} className="w-full bg-blue-600 text-white font-medium p-3 rounded hover:bg-blue-700 mt-4">
-                  Approve and Add to Profile
+                  Approve & Update Forecast
                 </button>
               ) : (
-                <div className="text-green-600 flex items-center justify-center space-x-2 p-3 mt-4">
-                  <CheckCircle /> <span>Approved & Added!</span>
+                <div className="mt-4 p-4 bg-green-50 rounded border border-green-200 text-center space-y-3">
+                  <div className="text-green-700 font-medium flex justify-center items-center space-x-2">
+                    <CheckCircle size={20} /> <span>Financial Event Created</span>
+                  </div>
+                  <p className="text-sm text-green-800">Your profile and cash flow projections have been updated.</p>
+                  <Link to="/cash-flow" className="inline-flex items-center space-x-1 text-sm bg-white border border-green-300 text-green-700 px-4 py-2 rounded hover:bg-green-100 font-medium">
+                    <TrendingUp size={16} /> <span>View New Forecast</span>
+                  </Link>
                 </div>
               )}
             </div>
