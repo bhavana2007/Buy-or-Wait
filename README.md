@@ -60,7 +60,18 @@ In the `backend` directory, run:
 - `GET /api/v1/events`
 - `POST /api/v1/analyze`
 
-## Limitations & Future Improvements
-- Currently uses a `MockDocumentExtractor` and `MockMessageExtractor`. Can be extended to use real LLM/VLM APIs.
-- The 90-day simulation is linear and O(N) but could be optimized for larger data sets.
-- Auth is mocked for demo purposes.
+## Current Capabilities
+- **Deterministic Financial Engine**: Computes affordability via 90-day cash-flow simulation, strictly maintaining minimum balances. Evaluates full payment, partial payment, wait, and installment plans.
+- **AI Extraction Layer**: Extensible interfaces (`DocumentExtractor` and `MessageExtractor`) to safely parse unstructured user inputs (invoices and messages) into structured financial records. Currently uses `MockDocumentExtractor` and `MockMessageExtractor` for robust local development.
+- **Fintech Dashboard**: A responsive, multi-page React application presenting financial health, charts, and recommendations using Tailwind CSS.
+- **API and Database**: FastAPI backend powered by SQLite, pre-configured with a seed database to run immediately.
+
+## Current Limitations
+- **AI Services**: Currently uses mocked extraction logic. Real LLM/VLM providers are not yet integrated into the endpoints.
+- **Forecast Optimization**: The 90-day simulation algorithm is linear and operates strictly in memory, which is perfect for an individual user's forecast but might need optimization if calculating thousands of events simultaneously.
+- **Authentication**: Auth is mocked for demo purposes.
+
+## Planned Improvements
+- Integration with an actual VLM (e.g. GPT-4o or Claude 3.5 Sonnet) for parsing invoice uploads.
+- Full authentication and multi-tenant Postgres support.
+- Configurable notification alerts for when cash flow drops below minimum reserves.
