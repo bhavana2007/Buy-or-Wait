@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { LayoutDashboard, ShoppingCart, Activity, FileText, MessageSquare } from 'lucide-react';
 import axios from 'axios';
