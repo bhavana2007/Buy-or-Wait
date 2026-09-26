@@ -36,9 +36,10 @@ class FinancialEngine:
                 
         return projections
 
-    def _get_daily_cashflow(self, start_date: date, end_date: date, skip_flexible_expenses: bool = False) -> Dict[date, float]:
+    def _get_daily_cashflow(self, start_date: date, end_date: date, skip_flexible_expenses: bool = False, additional_events: Optional[List[FinancialEvent]] = None) -> Dict[date, float]:
         cashflow = {start_date + timedelta(days=i): 0.0 for i in range((end_date - start_date).days + 1)}
-        for event in self.events:
+        all_events = self.events + (additional_events or [])
+        for event in all_events:
             if skip_flexible_expenses and event.is_flexible and not event.is_essential:
                 continue
             projections = self._project_event(event, start_date, end_date)
@@ -47,9 +48,9 @@ class FinancialEngine:
                     cashflow[d] += amt
         return cashflow
 
-    def simulate_90_days(self, request_date: date, skip_flexible_expenses: bool = False) -> Dict[date, float]:
+    def simulate_90_days(self, request_date: date, skip_flexible_expenses: bool = False, additional_events: Optional[List[FinancialEvent]] = None) -> Dict[date, float]:
         end_date = request_date + timedelta(days=90)
-        daily_cashflow = self._get_daily_cashflow(request_date, end_date, skip_flexible_expenses)
+        daily_cashflow = self._get_daily_cashflow(request_date, end_date, skip_flexible_expenses, additional_events)
         
         balances = {}
         current_balance = self.profile.current_balance

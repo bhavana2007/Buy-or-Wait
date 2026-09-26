@@ -80,10 +80,12 @@ If no key is present (or `your_key_here`), the app gracefully falls back to a Mo
 - **Human Review**: AI output is never blindly applied. The frontend requires explicit human review and approval for all parsed events.
 - **Untrusted Input**: All uploaded images and text are treated as untrusted. The AI is explicitly prompted to ignore embedded instructions.
 
-## Current Limitations
-- **AI Services**: Currently uses mocked extraction logic. Real LLM/VLM providers are not yet integrated into the endpoints.
-- **Forecast Optimization**: The 90-day simulation algorithm is linear and operates strictly in memory, which is perfect for an individual user's forecast but might need optimization if calculating thousands of events simultaneously.
-- **Authentication**: Auth is mocked for demo purposes.
+## Limitations & Security Considerations
+- **Authentication**: Auth is currently mocked (e.g., hardcoded `user_id="test_user"`). It is strictly single-tenant for demo purposes.
+- **Currency Support**: Currently operates with a hardcoded assumption of INR (`₹`) in frontend templates and some backend default values. Multi-currency conversions are not yet implemented.
+- **CORS Configuration**: CORS is explicitly scoped to localhost frontend origins, but should be updated with real production domains before deployment.
+- **Forecast Optimization**: The 90-day simulation algorithm is linear and operates strictly in memory.
+- **AI Extraction Boundaries**: While prompt injection defenses are present, the system relies on human-in-the-loop validation for absolute safety. AI results MUST NOT skip the frontend review step.
 
 ## Planned Improvements
 - Integration with an actual VLM (e.g. GPT-4o or Claude 3.5 Sonnet) for parsing invoice uploads.

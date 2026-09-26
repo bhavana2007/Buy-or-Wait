@@ -116,8 +116,14 @@ from app.services.ai_extractor import get_document_extractor, get_message_extrac
 
 @router.post("/documents/extract")
 async def extract_document(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    extractor = get_document_extractor()
+    if file.content_type not in ["image/jpeg", "image/png", "application/pdf"]:
+        raise HTTPException(status_code=400, detail="Unsupported file format")
+        
     bytes_data = await file.read()
+    if len(bytes_data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 5MB)")
+
+    extractor = get_document_extractor()
     res = extractor.extract_from_image(bytes_data, file.content_type)
     
     doc = DBDocumentExtraction(
