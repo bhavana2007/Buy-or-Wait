@@ -151,13 +151,15 @@ class RealLLMMessageExtractor(BaseMessageExtractor):
             return MessageExtractionResult(event_type="unknown", warnings=[str(e)], requires_review=True)
 
 def get_document_extractor() -> BaseDocumentExtractor:
-    api_key = os.getenv("OPENAI_API_KEY")
+    from app.core.config import settings
+    api_key = settings.OPENAI_API_KEY
     if api_key and api_key != "your_key_here":
         return RealLLMDocumentExtractor(api_key)
     return MockDocumentExtractor()
 
 def get_message_extractor() -> BaseMessageExtractor:
-    api_key = os.getenv("OPENAI_API_KEY")
+    from app.core.config import settings
+    api_key = settings.OPENAI_API_KEY
     if api_key and api_key != "your_key_here":
         return RealLLMMessageExtractor(api_key)
     return MockMessageExtractor()

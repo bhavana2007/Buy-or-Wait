@@ -32,6 +32,7 @@ class PurchaseRequest(BaseModel):
     user_id: str
     request_date: date
     requested_amount: float
+    currency: str = "INR"
     desired_completion_date: date
     allows_partial_payment: bool
     request_type: str
@@ -40,7 +41,7 @@ class PurchaseRequest(BaseModel):
 class AffordabilityResult(BaseModel):
     request_id: str
     amount_safe_to_pay: float
-    affordability_status: Literal['affordable_now', 'affordable_with_plan', 'affordable_later', 'not_affordable']
+    affordability_status: Literal['affordable_now', 'affordable_with_plan', 'affordable_later', 'not_affordable', 'unsupported']
     recommended_payment_method: Literal['full_payment', 'partial_payment', 'installments', 'wait', 'not_recommended']
     payment_plan: str
     earliest_date_for_full_payment: Optional[date]

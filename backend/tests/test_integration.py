@@ -1,16 +1,25 @@
+
 import pytest
 from fastapi.testclient import TestClient
 from main import app
+
+from app.api.auth import get_current_user
+from app.models.database import DBUser
+
+
+
 from app.models.database import Base, engine, SessionLocal, DBUser, DBFinancialProfile, DBFinancialEvent
 
 client = TestClient(app)
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_db():
+    
+
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     if not db.query(DBUser).filter(DBUser.id == "test_user").first():
-        db.add(DBUser(id="test_user", name="Test User"))
+        db.add(DBUser(id="test_user", name="Test User", email="test@test.com", hashed_password="hash"))
         db.add(DBFinancialProfile(user_id="test_user", home_currency="INR", current_balance=45000, minimum_balance_to_keep=20000))
         db.commit()
     yield

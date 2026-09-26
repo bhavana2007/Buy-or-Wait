@@ -3,14 +3,26 @@ from typing import List, Dict, Optional, Tuple
 from app.models.financial import FinancialProfile, FinancialEvent, PurchaseRequest, AffordabilityResult
 
 class FinancialEngine:
-    def __init__(self, profile: FinancialProfile, events: List[FinancialEvent]):
+    def __init__(self, profile: FinancialProfile, events: List[FinancialEvent], exchange_rates: Optional[Dict[str, float]] = None):
         self.profile = profile
         self.events = events
+        self.exchange_rates = exchange_rates or {}
+
+    def _convert_currency(self, amount: float, from_currency: str, to_currency: str, event_date: date) -> Optional[float]:
+        if from_currency == to_currency:
+            return amount
+        
+        # Simple lookup: we assume exchange_rates dict is keyed by "date:from_currency:to_currency"
+        key = f"{event_date.isoformat()}:{from_currency}:{to_currency}"
+        if key in self.exchange_rates:
+            return amount * self.exchange_rates[key]
+        return None
 
     def _project_event(self, event: FinancialEvent, start_date: date, end_date: date) -> List[Tuple[date, float]]:
-        # Handles currency conversion (mocked as 1:1 for now if missing, but typically we'd use a rate table)
-        # We will assume all event amounts are already converted to home_currency for simplicity in this engine version.
-        
+        converted = self._convert_currency(event.amount, event.currency, self.profile.home_currency, event.date)
+        if converted is None:
+            return []
+            
         if event.status in ['failed', 'cancelled', 'unrealized']:
             return []
         if event.status == 'pending' and event.is_income:
@@ -18,7 +30,7 @@ class FinancialEngine:
             return []
             
         projections = []
-        amount = event.amount if event.is_income else -event.amount
+        amount = converted if event.is_income else -converted
         
         if not event.is_recurring:
             if start_date <= event.date <= end_date:
@@ -70,9 +82,29 @@ class FinancialEngine:
                 decision_explanation='Invalid or zero amount requested.'
             )
 
+        req_amount = self._convert_currency(request.requested_amount, request.currency, self.profile.home_currency, request.request_date)
+        if req_amount is None:
+            return AffordabilityResult(
+                request_id=request.request_id, amount_safe_to_pay=0, affordability_status='unsupported',
+                recommended_payment_method='not_recommended', payment_plan='none',
+                earliest_date_for_full_payment=None, spending_changes_needed='none',
+                decision_explanation=f'Currency {request.currency} is not supported. No exchange rate available on {request.request_date.isoformat()}.'
+            )
+
+        # Check if any event uses an unsupported currency
+        for event in self.events:
+            converted = self._convert_currency(event.amount, event.currency, self.profile.home_currency, event.date)
+            if converted is None:
+                return AffordabilityResult(
+                    request_id=request.request_id, amount_safe_to_pay=0, affordability_status='unsupported',
+                    recommended_payment_method='not_recommended', payment_plan='none',
+                    earliest_date_for_full_payment=None, spending_changes_needed='none',
+                    decision_explanation=f'Event {event.event_id} uses unsupported currency {event.currency}. No exchange rate available on {event.date.isoformat()}.'
+                )
+
         # Baseline simulation
         balances = self.simulate_90_days(request.request_date)
-        req_amount = request.requested_amount
+
         min_reserve = self.profile.minimum_balance_to_keep
         
         def get_safe_amount_today(bals):

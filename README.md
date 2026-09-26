@@ -28,21 +28,43 @@ graph TD
 - **Backend**: Python, FastAPI, Pydantic, SQLAlchemy.
 - **Database**: SQLite (local development).
 
-## How to Run Locally
+## Environment Variables
+Create a `.env` file in the `backend/` directory by copying `.env.example`:
+```env
+DATABASE_URL=sqlite:///./buy_or_wait.db
+JWT_SECRET_KEY=your_secure_random_string_here
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=1440
+CORS_ORIGINS=http://localhost:5173
+OPENAI_API_KEY=your_openai_api_key_here
+MAX_UPLOAD_SIZE_MB=5
+```
 
-### Environment Setup
-Create a `.env` file in the `backend/` directory:
+Create a `.env` file in the `frontend/` directory by copying `.env.example`:
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
-# .env
-CORS_ORIGINS=["http://localhost:5173", "http://127.0.0.1:5173"]
+
+## Security
+- **Authentication**: JWT-based authentication via bcrypt hashed passwords.
+- **Secrets Management**: Secrets are required to be supplied via deployment configuration. `.env` is ignored by Git, and AI API keys stay strictly server-side.
+- **Document Uploads**: 5MB size limits, exact MIME/extension validation, and safe filename sanitization to prevent path traversal.
+- **CORS**: Strictly defined by `CORS_ORIGINS`.
+
+## Database Migrations
+Migrations are handled via Alembic. To update your database to the latest schema:
+```bash
+alembic upgrade head
 ```
+
+## Development Setup
 
 ### Backend
 1. `cd backend`
 2. `python -m venv venv`
 3. `venv\Scripts\activate` (Windows)
 4. `pip install -r requirements.txt`
-5. `python seed.py`
+5. `alembic upgrade head`
 6. `uvicorn main:app --reload --port 8000`
 
 ### Frontend
@@ -54,40 +76,16 @@ CORS_ORIGINS=["http://localhost:5173", "http://127.0.0.1:5173"]
 In the `backend` directory, run:
 `pytest tests/`
 
-## API Overview
-- `GET /api/v1/health`
-- `GET /api/v1/profile`
-- `GET /api/v1/events`
-- `POST /api/v1/analyze`
-
-## Current Capabilities
-- **Deterministic Financial Engine**: Computes affordability via 90-day cash-flow simulation, strictly maintaining minimum balances. Evaluates full payment, partial payment, wait, and installment plans.
-- **AI Information Extraction**: Extensible interfaces (`RealLLMDocumentExtractor` and `RealLLMMessageExtractor`) safely parse unstructured user inputs (invoices and messages) into structured financial records. Supports fallback to `MockDocumentExtractor` and `MockMessageExtractor` for local development without an API key. 
-- **Validation Pipeline**: Deterministic validation runs *after* AI extraction to ensure no hallucinations (e.g. negative amounts) slip into the financial state. Human review is mandatory.
-- **End-to-End Persisted Workflows**: Document approvals trigger real purchase simulations. Message approvals safely create normalized financial events and instantly recalculate the 90-day forecast.
-- **Fintech Dashboard**: A responsive, multi-page React application presenting financial health, charts, and AI review workflows using Tailwind CSS.
-- **API and Database**: FastAPI backend powered by SQLite, fully tracking profiles, events, extractions, and analysis results.
-
-## Configuration & Local Setup
-To run the Real AI extraction using OpenAI's GPT-4o, add your key to a `.env` file in the root:
-```env
-OPENAI_API_KEY=your-actual-api-key
-```
-If no key is present (or `your_key_here`), the app gracefully falls back to a Mock Extractor.
+## Production Configuration
+- Ensure a strong `JWT_SECRET_KEY` is generated and injected.
+- `DATABASE_URL` should point to a secure production database (e.g. Postgres).
+- Ensure `.env` files are local-only; in deployment platforms like Vercel or Railway, inject environment variables directly into the dashboard.
 
 ## Security & AI Limitations
 - **Information Component Only**: AI extraction is used *only* to convert unstructured information into structured financial facts. The deterministic engine remains the sole source of truth for affordability decisions.
 - **Human Review**: AI output is never blindly applied. The frontend requires explicit human review and approval for all parsed events.
 - **Untrusted Input**: All uploaded images and text are treated as untrusted. The AI is explicitly prompted to ignore embedded instructions.
 
-## Limitations & Security Considerations
-- **Authentication**: Auth is currently mocked (e.g., hardcoded `user_id="test_user"`). It is strictly single-tenant for demo purposes.
-- **Currency Support**: Currently operates with a hardcoded assumption of INR (`₹`) in frontend templates and some backend default values. Multi-currency conversions are not yet implemented.
-- **CORS Configuration**: CORS is explicitly scoped to localhost frontend origins, but should be updated with real production domains before deployment.
-- **Forecast Optimization**: The 90-day simulation algorithm is linear and operates strictly in memory.
-- **AI Extraction Boundaries**: While prompt injection defenses are present, the system relies on human-in-the-loop validation for absolute safety. AI results MUST NOT skip the frontend review step.
-
 ## Planned Improvements
 - Integration with an actual VLM (e.g. GPT-4o or Claude 3.5 Sonnet) for parsing invoice uploads.
-- Full authentication and multi-tenant Postgres support.
 - Configurable notification alerts for when cash flow drops below minimum reserves.

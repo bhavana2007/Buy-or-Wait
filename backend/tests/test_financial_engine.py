@@ -122,10 +122,17 @@ def test_14_unaffordable_wait_outside_desired_date():
     assert res.affordability_status == "not_affordable"
 
 def test_15_currency_conversion_fallback():
-    # Since we assume 1:1 fallback in the engine currently
+    # If any event uses a different currency, we return unsupported rather than assuming 1:1
     profile = get_base_profile()
     events = [FinancialEvent(event_id="e1", amount=10000.0, currency="USD", date=date.today()+timedelta(days=1), status="scheduled", is_income=False, is_recurring=False, is_essential=True)]
-    req = PurchaseRequest(request_id="r1", user_id="u1", request_date=date.today(), requested_amount=10000.0, desired_completion_date=date.today(), allows_partial_payment=False, request_type="purchase")
+    req = PurchaseRequest(request_id="r1", user_id="u1", request_date=date.today(), requested_amount=10000.0, currency="INR", desired_completion_date=date.today(), allows_partial_payment=False, request_type="purchase")
     res = FinancialEngine(profile, events).analyze_request(req)
-    assert res.affordability_status == "affordable_now"
-    assert res.amount_safe_to_pay == 10000.0
+    assert res.affordability_status == "unsupported"
+    assert "uses unsupported currency USD" in res.decision_explanation
+
+def test_16_request_currency_fallback():
+    profile = get_base_profile()
+    req = PurchaseRequest(request_id="r1", user_id="u1", request_date=date.today(), requested_amount=10000.0, currency="EUR", desired_completion_date=date.today(), allows_partial_payment=False, request_type="purchase")
+    res = FinancialEngine(profile, []).analyze_request(req)
+    assert res.affordability_status == "unsupported"
+    assert "Currency EUR is not supported" in res.decision_explanation

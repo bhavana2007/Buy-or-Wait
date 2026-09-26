@@ -14,6 +14,8 @@ class DBUser(Base):
     __tablename__ = "users"
     id = Column(String, primary_key=True, index=True)
     name = Column(String)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
 
 class DBFinancialProfile(Base):
     __tablename__ = "financial_profiles"

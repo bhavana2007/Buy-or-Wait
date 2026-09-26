@@ -24,7 +24,7 @@ client = TestClient(app)
 def setup_db():
     db = TestingSessionLocal()
     if not db.query(DBUser).first():
-        db.add(DBUser(id="test_user", name="Test User"))
+        db.add(DBUser(id="test_user", name="Test User", email="test@test.com", hashed_password="hash"))
         db.add(DBFinancialProfile(user_id="test_user", home_currency="INR", current_balance=50000.0, minimum_balance_to_keep=20000.0))
         db.commit()
     db.close()
@@ -36,18 +36,18 @@ def test_health():
 
 def test_get_profile():
     setup_db()
-    response = client.get("/api/v1/profile/test_user")
+    response = client.get("/api/v1/profile")
     assert response.status_code == 200
     assert response.json()["home_currency"] == "INR"
 
 def test_get_events():
     setup_db()
-    response = client.get("/api/v1/events/test_user")
+    response = client.get("/api/v1/events")
     assert response.status_code == 200
 
 def test_get_forecast():
     setup_db()
-    response = client.get("/api/v1/forecast/test_user")
+    response = client.get("/api/v1/forecast")
     assert response.status_code == 200
 
 def test_analyze():

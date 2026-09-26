@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from app.api.auth import get_current_user
 from app.models.database import SessionLocal, DBUser, DBFinancialProfile, DBFinancialEvent
 from app.models.financial import PurchaseRequest, AffordabilityResult
 from app.services.financial_engine import FinancialEngine
@@ -14,7 +15,8 @@ def get_db():
         db.close()
 
 @router.post("/analyze")
-def analyze_purchase(request: PurchaseRequest, db: Session = Depends(get_db)):
+def analyze_purchase(request: PurchaseRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    request.user_id = current_user.id
     # Fetch profile and events from DB
     db_profile = db.query(DBFinancialProfile).filter(DBFinancialProfile.user_id == request.user_id).first()
     if not db_profile:
@@ -39,7 +41,8 @@ def analyze_purchase(request: PurchaseRequest, db: Session = Depends(get_db)):
         payment_methods_user_will_consider=["full_payment", "partial_payment", "installments", "wait"]
     )
     
-    engine = FinancialEngine(profile=profile, events=events)
+    from app.services.exchange_rates import get_exchange_rates
+    engine = FinancialEngine(profile=profile, events=events, exchange_rates=get_exchange_rates())
     res = engine.analyze_request(request)
     
     # Save analysis result to DB
@@ -61,20 +64,23 @@ def analyze_purchase(request: PurchaseRequest, db: Session = Depends(get_db)):
     response_data["chart_data"] = build_forecast_data(engine, request, res)
     return response_data
 
-@router.get("/profile/{user_id}")
-def get_profile(user_id: str, db: Session = Depends(get_db)):
+@router.get("/profile")
+def get_profile(current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    user_id = current_user.id
     profile = db.query(DBFinancialProfile).filter(DBFinancialProfile.user_id == user_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     return profile
 
-@router.get("/events/{user_id}")
-def get_events(user_id: str, db: Session = Depends(get_db)):
+@router.get("/events")
+def get_events(current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    user_id = current_user.id
     events = db.query(DBFinancialEvent).filter(DBFinancialEvent.user_id == user_id).all()
     return events
 
-@router.get("/forecast/{user_id}")
-def get_forecast(user_id: str, db: Session = Depends(get_db)):
+@router.get("/forecast")
+def get_forecast(current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    user_id = current_user.id
     db_profile = db.query(DBFinancialProfile).filter(DBFinancialProfile.user_id == user_id).first()
     if not db_profile:
         raise HTTPException(status_code=404, detail="User profile not found")
@@ -93,7 +99,8 @@ def get_forecast(user_id: str, db: Session = Depends(get_db)):
         payment_methods_user_will_consider=["full_payment", "partial_payment", "installments", "wait"]
     )
     
-    engine = FinancialEngine(profile=profile, events=events)
+    from app.services.exchange_rates import get_exchange_rates
+    engine = FinancialEngine(profile=profile, events=events, exchange_rates=get_exchange_rates())
     # Get standard 90-day baseline forecast
     from datetime import date
     base_dict = engine.simulate_90_days(date.today())
@@ -107,6 +114,7 @@ def get_forecast(user_id: str, db: Session = Depends(get_db)):
         ]
     }
 
+from app.api.auth import get_current_user
 from app.models.database import SessionLocal, DBUser, DBFinancialProfile, DBFinancialEvent, DBDocumentExtraction, DBMessageExtraction, DBPurchaseRequest, DBAnalysisResult
 
 # ... existing code for /analyze and /events ...
@@ -115,19 +123,37 @@ from fastapi import UploadFile, File
 from app.services.ai_extractor import get_document_extractor, get_message_extractor
 
 @router.post("/documents/extract")
-async def extract_document(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def extract_document(file: UploadFile = File(...), current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.core.config import settings
+    import os
+    import re
+
+    # Validate filename and extension
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename missing")
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".pdf"]:
+        raise HTTPException(status_code=400, detail="Unsupported file extension")
+
+    # Sanitize filename (basic prevention of path traversal though we don't save to disk)
+    sanitized_name = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(file.filename))
+
     if file.content_type not in ["image/jpeg", "image/png", "application/pdf"]:
         raise HTTPException(status_code=400, detail="Unsupported file format")
         
     bytes_data = await file.read()
-    if len(bytes_data) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (max 5MB)")
+    if not bytes_data:
+        raise HTTPException(status_code=400, detail="File is empty")
+        
+    max_size_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    if len(bytes_data) > max_size_bytes:
+        raise HTTPException(status_code=400, detail=f"File too large (max {settings.MAX_UPLOAD_SIZE_MB}MB)")
 
     extractor = get_document_extractor()
     res = extractor.extract_from_image(bytes_data, file.content_type)
     
     doc = DBDocumentExtraction(
-        user_id="test_user", # hardcoded for demo auth
+        user_id=current_user.id,
         merchant=res.merchant,
         amount=res.amount,
         currency=res.currency,
@@ -158,8 +184,8 @@ class DocumentApproval(BaseModel):
     date: str
 
 @router.post("/documents/{doc_id}/approve")
-def approve_document(doc_id: str, payload: DocumentApproval, db: Session = Depends(get_db)):
-    doc = db.query(DBDocumentExtraction).filter(DBDocumentExtraction.id == doc_id).first()
+def approve_document(doc_id: str, payload: DocumentApproval, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
+    doc = db.query(DBDocumentExtraction).filter(DBDocumentExtraction.id == doc_id, DBDocumentExtraction.user_id == current_user.id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     if doc.is_approved:
@@ -182,12 +208,12 @@ class MessageInput(BaseModel):
     text: str
 
 @router.post("/messages/extract")
-def extract_message(msg: MessageInput, db: Session = Depends(get_db)):
+def extract_message(msg: MessageInput, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     extractor = get_message_extractor()
     res = extractor.extract_from_text(msg.text)
     
     m_ext = DBMessageExtraction(
-        user_id="test_user",
+        user_id=current_user.id,
         original_text=msg.text,
         event_type=res.event_type,
         amount=res.amount,
@@ -218,7 +244,7 @@ class MessageApproval(BaseModel):
     effective_date: str
 
 @router.post("/messages/{msg_id}/approve")
-def approve_message(msg_id: str, payload: MessageApproval, db: Session = Depends(get_db)):
+def approve_message(msg_id: str, payload: MessageApproval, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     msg = db.query(DBMessageExtraction).filter(DBMessageExtraction.id == msg_id).first()
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
@@ -272,7 +298,7 @@ class PurchaseCreate(BaseModel):
     purchase_date: str
 
 @router.post("/purchases")
-def create_purchase(payload: PurchaseCreate, db: Session = Depends(get_db)):
+def create_purchase(payload: PurchaseCreate, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     if payload.amount <= 0:
         raise HTTPException(status_code=400, detail="Purchase amount must be positive")
     
@@ -280,7 +306,7 @@ def create_purchase(payload: PurchaseCreate, db: Session = Depends(get_db)):
     req_id = str(uuid.uuid4())
     db_req = DBPurchaseRequest(
         id=req_id,
-        user_id="test_user",
+        user_id=current_user.id,
         document_id=payload.document_id,
         amount=payload.amount,
         currency=payload.currency,
