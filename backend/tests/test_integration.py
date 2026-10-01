@@ -119,3 +119,22 @@ def test_duplicate_document_approval(tmp_path):
     })
     assert app2.status_code == 200
     assert app2.json()["status"] == "already_approved"
+
+
+def test_bank_credit_sms_extraction():
+    sms = "Dear Customer, an amount of Rs.40000 is credited in your A/c XXXX5459 towards NEFT UTR:SBIIN126274485901. Available balance is Rs.60279.40 -APGBank\n💳 Transaction\nApgbank + ₹40,000\nAccount xx5"
+    res = client.post("/api/v1/messages/extract", json={"text": sms})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    ext = data["extraction"]
+    assert ext["amount"] == 40000.0
+    assert ext["currency"] == "INR"
+    assert ext["event_type"] == "income"
+
+def test_message_extraction_failure_path():
+    res = client.post("/api/v1/messages/extract", json={"text": "unrecognizable message"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "needs_review"
+    assert data["extraction"]["event_type"] == "unknown"
