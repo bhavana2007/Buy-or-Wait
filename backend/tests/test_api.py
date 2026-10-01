@@ -52,6 +52,13 @@ def test_get_forecast():
 
 def test_analyze():
     setup_db()
+    db = TestingSessionLocal()
+    from app.models.database import DBPurchaseRequest
+    # Create valid purchase request owned by test_user
+    db.add(DBPurchaseRequest(id="req_1", user_id="test_user", amount=10000.0, currency="INR", merchant="Test", purchase_date="2026-09-15"))
+    db.commit()
+    db.close()
+    
     payload = {
         "request_id": "req_1",
         "user_id": "test_user",
@@ -64,3 +71,29 @@ def test_analyze():
     response = client.post("/api/v1/analyze", json=payload)
     assert response.status_code == 200
     assert response.json()["affordability_status"] == "affordable_now"
+
+def test_analyze_user_isolation():
+    setup_db()
+    db = TestingSessionLocal()
+    from app.models.database import DBUser, DBPurchaseRequest
+    if not db.query(DBUser).filter(DBUser.id == "other_user").first():
+        db.add(DBUser(id="other_user", name="Other User", email="other@test.com", hashed_password="hash"))
+    # Create purchase request owned by other_user
+    db.add(DBPurchaseRequest(id="req_other", user_id="other_user", amount=10000.0, currency="INR", merchant="Test", purchase_date="2026-09-15"))
+    db.commit()
+    db.close()
+    
+    # Attempt to analyze the other user's request_id while logged in as test_user (default client auth)
+    payload = {
+        "request_id": "req_other",
+        "user_id": "test_user",
+        "request_date": "2026-09-15",
+        "requested_amount": 10000.0,
+        "desired_completion_date": "2026-09-15",
+        "allows_partial_payment": True,
+        "request_type": "purchase"
+    }
+    response = client.post("/api/v1/analyze", json=payload)
+    # Should be rejected because request_id is not owned by current_user
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Purchase request not found"

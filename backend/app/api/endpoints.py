@@ -17,6 +17,12 @@ def get_db():
 @router.post("/analyze")
 def analyze_purchase(request: PurchaseRequest, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
     request.user_id = current_user.id
+    
+    # Verify the purchase request exists and is owned by the current user
+    db_req = db.query(DBPurchaseRequest).filter(DBPurchaseRequest.id == request.request_id, DBPurchaseRequest.user_id == current_user.id).first()
+    if not db_req:
+        raise HTTPException(status_code=404, detail="Purchase request not found")
+        
     # Fetch profile and events from DB
     db_profile = db.query(DBFinancialProfile).filter(DBFinancialProfile.user_id == request.user_id).first()
     if not db_profile:
