@@ -245,7 +245,7 @@ class MessageApproval(BaseModel):
 
 @router.post("/messages/{msg_id}/approve")
 def approve_message(msg_id: str, payload: MessageApproval, current_user = Depends(get_current_user), db: Session = Depends(get_db)):
-    msg = db.query(DBMessageExtraction).filter(DBMessageExtraction.id == msg_id).first()
+    msg = db.query(DBMessageExtraction).filter(DBMessageExtraction.id == msg_id, DBMessageExtraction.user_id == current_user.id).first()
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
     if msg.is_approved:
