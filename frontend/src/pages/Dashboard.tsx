@@ -15,9 +15,9 @@ export const Dashboard = () => {
     setError(false);
     try {
       const [pRes, eRes, fRes] = await Promise.all([
-        fetchProfile('test_user'),
-        fetchEvents('test_user'),
-        fetchForecast('test_user')
+        fetchProfile(),
+        fetchEvents(),
+        fetchForecast()
       ]);
       setProfile(pRes);
       setEvents(eRes);

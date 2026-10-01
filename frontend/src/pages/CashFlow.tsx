@@ -15,11 +15,11 @@ export const CashFlow = () => {
     setLoading(true);
     setError(false);
     try {
-      const p = await fetchProfile('test_user');
+      const p = await fetchProfile();
       setMinBalance(p.minimum_balance_to_keep);
       setCurrentBalance(p.current_balance);
       
-      const res = await fetchForecast('test_user');
+      const res = await fetchForecast();
       if (res.status === 'ok') {
         let lowest = p.current_balance;
         const chartData = res.forecast.map((f: any) => {

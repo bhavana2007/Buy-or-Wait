@@ -30,7 +30,6 @@ export const BuyOrWait = () => {
       
       const analyzeRes = await analyzePurchase({
         request_id: purchaseRes.request_id,
-        user_id: 'test_user',
         request_date: today,
         requested_amount: Number(amount),
         desired_completion_date: today,

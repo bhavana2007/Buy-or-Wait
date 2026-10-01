@@ -1,11 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ShoppingCart, Activity, FileText, MessageSquare, Settings, Menu, X } from 'lucide-react';
+import { Home, ShoppingCart, Activity, FileText, MessageSquare, Settings, Menu, X, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 import clsx from 'clsx';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: Home },
@@ -44,6 +46,18 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           <span className="font-bold text-xl text-slate-800 tracking-tight">Buy or Wait?</span>
         </div>
         
+        <div className="px-6 mb-6">
+          <div className="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center font-bold text-lg">
+              {user?.name?.charAt(0).toUpperCase() || <User size={20} />}
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="font-medium text-slate-900 truncate">{user?.name || 'User'}</p>
+              <p className="text-xs text-slate-500 truncate">{user?.email || ''}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="flex-1 px-4 py-4 lg:py-0 overflow-y-auto">
           <div className="space-y-1">
             {navItems.map((item) => {
@@ -68,10 +82,14 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-slate-100 space-y-1">
           <button className="flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 w-full">
             <Settings size={20} className="text-slate-400" />
             <span>Settings</span>
+          </button>
+          <button onClick={logout} className="flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 font-medium text-red-600 hover:bg-red-50 hover:text-red-700 w-full">
+            <LogOut size={20} />
+            <span>Sign Out</span>
           </button>
         </div>
       </div>
