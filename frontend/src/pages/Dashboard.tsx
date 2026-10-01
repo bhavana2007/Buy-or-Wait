@@ -40,7 +40,7 @@ export const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-slate-500 space-y-4">
-        <RefreshCw className="animate-spin text-blue-600" size={32} />
+        <RefreshCw className="animate-spin text-brand-blue" size={32} />
         <p className="font-medium">Loading your financial overview...</p>
       </div>
     );
@@ -51,7 +51,7 @@ export const Dashboard = () => {
       <div className="flex flex-col items-center justify-center h-64 text-slate-500 space-y-4 bg-white rounded-2xl border border-red-100 p-8 shadow-sm">
         <AlertCircle className="text-red-500" size={48} />
         <p className="text-lg font-medium text-slate-800">Unable to load financial data.</p>
-        <button onClick={loadData} className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium">
+        <button onClick={loadData} className="px-4 py-2 bg-brand-navy text-white rounded-lg hover:opacity-90 font-medium">
           Retry Connection
         </button>
       </div>
@@ -86,10 +86,10 @@ export const Dashboard = () => {
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <ShieldCheck size={64} className="text-blue-600" />
+            <ShieldCheck size={64} className="text-brand-blue" />
           </div>
           <div className="flex items-center space-x-3 mb-2">
-            <div className="p-2 bg-blue-50 rounded-lg"><ShieldCheck size={20} className="text-blue-700" /></div>
+            <div className="p-2 bg-brand-lavender rounded-lg"><ShieldCheck size={20} className="text-brand-blue" /></div>
             <h3 className="font-medium text-slate-600">Safe Reserve</h3>
           </div>
           <p className="text-3xl font-bold text-slate-900 tracking-tight">₹{profile.minimum_balance_to_keep.toLocaleString()}</p>
@@ -198,7 +198,7 @@ export const Dashboard = () => {
                     formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, 'Projected Balance']}
                   />
                   <ReferenceLine y={profile.minimum_balance_to_keep} stroke="#ef4444" strokeDasharray="4 4" opacity={0.6} />
-                  <Line type="monotone" dataKey="balance" stroke="#2563eb" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0, fill: '#2563eb' }} />
+                  <Line type="monotone" dataKey="balance" stroke="#315CF6" strokeWidth={3} dot={false} activeDot={{ r: 6, strokeWidth: 0, fill: '#315CF6' }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -209,7 +209,7 @@ export const Dashboard = () => {
           </div>
           <div className="mt-4 flex items-center space-x-6 text-sm text-slate-500 justify-center">
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+              <div className="w-3 h-3 rounded-full bg-brand-blue"></div>
               <span>Projected Balance</span>
             </div>
             <div className="flex items-center space-x-2">

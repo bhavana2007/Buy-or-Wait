@@ -24,10 +24,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-50">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">B</span>
-          </div>
-          <span className="font-bold text-xl text-slate-800 tracking-tight">Buy or Wait?</span>
+          <img src="/branding/favicon.png" alt="Buy Or Wait logo" className="w-8 h-8 object-contain" />
+          <span className="font-bold text-xl text-brand-navy tracking-tight">Buy Or Wait</span>
         </div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-slate-600">
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -40,15 +38,13 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         isMobileMenuOpen ? "translate-x-0 pt-16" : "-translate-x-full"
       )}>
         <div className="hidden lg:flex items-center space-x-3 px-6 h-20 border-b border-slate-100 mb-4">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-lg">B</span>
-          </div>
-          <span className="font-bold text-xl text-slate-800 tracking-tight">Buy or Wait?</span>
+          <img src="/branding/favicon.png" alt="Buy Or Wait logo" className="w-8 h-8 object-contain shadow-sm rounded-lg" />
+          <span className="font-bold text-xl text-brand-navy tracking-tight">Buy Or Wait</span>
         </div>
         
         <div className="px-6 mb-6">
           <div className="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center font-bold text-lg">
+            <div className="w-10 h-10 bg-brand-lavender text-brand-blue rounded-lg flex items-center justify-center font-bold text-lg">
               {user?.name?.charAt(0).toUpperCase() || <User size={20} />}
             </div>
             <div className="flex-1 overflow-hidden">
@@ -70,11 +66,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                   className={clsx(
                     "flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors duration-200 font-medium",
                     isActive 
-                      ? "bg-blue-50 text-blue-700" 
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      ? "bg-brand-lavender text-brand-blue" 
+                      : "text-slate-600 hover:bg-slate-100 hover:text-brand-navy"
                   )}
                 >
-                  <item.icon size={20} className={clsx(isActive ? "text-blue-600" : "text-slate-400")} />
+                  <item.icon size={20} className={clsx(isActive ? "text-brand-blue" : "text-slate-400")} />
                   <span>{item.name}</span>
                 </Link>
               );

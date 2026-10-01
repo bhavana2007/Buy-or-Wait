@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle, MessageSquare, Loader2, ArrowRight, Activity, AlertTriangle } from 'lucide-react';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
 
 export const Messages = () => {
   const [message, setMessage] = useState('');
@@ -20,23 +20,23 @@ export const Messages = () => {
     setLoading(true);
     setExtraction(null);
     try {
-      const res = await axios.post('http://localhost:8000/api/v1/messages/extract', { text: message });
+      const res = await api.post('/messages/extract', { text: message });
       setExtraction(res.data);
       setEventType(res.data.extraction.event_type || '');
       setAmount(res.data.extraction.amount || '');
       setCurrency(res.data.extraction.currency || '');
       setEffectiveDate(res.data.extraction.effective_date || '');
       setApproved(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to extract data. Please try again.");
+      alert(err.response?.status === 401 ? "Session expired. Please log in again." : "Unable to extract this message. Check the AI extraction configuration or try again.");
     }
     setLoading(false);
   };
 
   const handleApprove = async () => {
     try {
-      await axios.post(`http://localhost:8000/api/v1/messages/${extraction.extraction_id}/approve`, {
+      await api.post(`/messages/${extraction.extraction_id}/approve`, {
         event_type: eventType,
         amount: Number(amount),
         currency,

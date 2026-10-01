@@ -90,6 +90,15 @@ class MockMessageExtractor(BaseMessageExtractor):
                 description="Salary update",
                 confidence=0.92
             )
+        if "rs.40000 is credited" in message.lower() or "apgbank + ₹40,000" in message.lower():
+            return MessageExtractionResult(
+                event_type="income",
+                amount=40000.0,
+                currency="INR",
+                effective_date="2026-10-01", # generic date for test
+                description="Bank credit transaction",
+                confidence=0.95
+            )
         return MessageExtractionResult(
             event_type="unknown", confidence=0.0, warnings=["Mock AI could not understand message."], requires_review=True
         )
